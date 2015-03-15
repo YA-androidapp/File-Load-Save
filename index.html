@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>File Load/Save</title>
+<script src="encoding.js"></script>
+<script>
+window.onload = function () {
+
+if(window.File && window.FileReader) {
+ //File API
+}else{
+ alert("Unsupported");
+}
+
+function $(id) {
+ return document.querySelector(id);
+}
+
+function updateProgress(newValue) {
+ $('#p1').value = newValue;
+ $('#p2').innerText = newValue;
+}
+
+function addEventListeners(reader) {
+ reader.addEventListener("loadstart",function(e){
+  updateProgress(0);
+ });
+ reader.addEventListener("progress",function(e){
+  updateProgress(100*(e.loaded/e.total));
+ });
+ reader.addEventListener("loadend",function(e){
+  updateProgress(100);
+ });
+}
+
+$("#saveid").addEventListener("click", function(){
+ var value = $("#contid").value;
+ var href = "data:application/octet-stream," + encodeURIComponent(value);
+ this.setAttribute("href", href);
+}, false);
+
+$("#fileid").onchange = function(e){
+ $("#thumbid").style.display = false;
+
+ var files = e.target.files;
+ var s = "";
+ for(var i = 0; i < files.length; i++){
+  var f = files[i];
+  s += 
+   'filename: ' + escape(f.name) + '\n' +
+   ' size: ' + f.size + ' Bytes\n' +
+   ' type: ' + f.type + '\n' +
+   ' date: ' + f.lastModifiedDate + '\n\n';
+  $('#infoid').innerHTML += s;
+  if(f.type.match(/image/)) {
+   var reader = new FileReader();
+   reader.onload = function(evt) {
+    $("#thumbid").src = reader.result;
+    $("#thumbid").style.display = true;
+   }
+   addEventListeners(reader);
+   reader.readAsDataURL(f);
+  } else if (f.type.match(/text/)){
+   var reader = new FileReader();
+   // reader.onload = function(e){
+   //  $("#contid").value = e.target.result;
+   // }
+   // reader.readAsText(f, "Shift_JIS");
+   reader.onload = function (e) {
+    var rslt = e.target.result;
+    var array = new Uint8Array(rslt);
+    switch (Encoding.detect(array)) {
+    case 'UTF16':
+     array = new Uint16Array(e.target.result);
+     break;
+    case 'UTF32':
+     array = new Uint32Array(e.target.result);
+     break;
+    }
+    var text = Encoding.codeToString(Encoding.convert(array, 'UNICODE'));
+    $("#saveid").download = escape(f.name);
+    $("#contid").value += text;
+   }
+   addEventListeners(reader);
+   reader.readAsArrayBuffer(f);
+  }
+ }
+}
+
+};
+</script>
+</head>
+<body>
+ <h1>Load</h1>
+ <input id="fileid" type="file" multiple>
+ <div><progress id="p1" max=100 value=0><span id="p2">0</span>%</progress></div><br />
+ <h1><a id="saveid" download="default.txt">Save</a></h1>
+ <h1>File Info</h1>
+ <textarea id="infoid" style="width:90%;height:10em;"></textarea><br />
+ <h1>File Contents</h1>
+ <textarea id="contid" style="width:90%;height:20em;"></textarea><br />
+ <img id="thumbid" width="320"><br />
+
+ <br /><br /><br /><br /><br /><hr />
+
+ <h3>Author</h3>
+
+ <a href="https://github.com/YA-androidapp">YA-androidapp</a>
+
+ <h3>Libraries</h3>
+ <h4>MIT Libraries</h4>
+ <ul>
+  <li><a href="https://github.com/polygonplanet/encoding.js">polygonplanet/encoding.js</a></li>
+ </ul>
+
+</body>
+</html>
